@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manager Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px; /* Added bottom margin for spacing */
+        }
+
+        input[type="text"], input[type="url"], input[type="file"], input[type="date"] {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box; /* Ensures padding is included in width */
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 0; /* Consistent vertical margin */
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #218838;
+        }
+
+        .section {
+            margin-bottom: 30px; /* Increased bottom margin for sections */
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #fafafa;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px; /* Space below section header */
+        }
+
+        .section-header h3 {
+            margin: 0;
+            color: #333;
+        }
+
+        .item-list {
+            margin-top: 15px;
+        }
+
+        .item-list div {
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        img {
+            max-width: 100px;
+            margin-left: 10px;
+        }
+
+        .search-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .search-container input {
+            flex: 1;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js"></script>
+        <script type="module">
+            // Import the functions you need from the SDKs you need
+            import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+            // TODO: Add SDKs for Firebase products that you want to use
+            // https://firebase.google.com/docs/web/setup#available-libraries
+          
+            // Your web app's Firebase configuration
+            const firebaseConfig = {
+              apiKey: "AIzaSyAk9upcWWIAGoRVUqLZPlj21KWXBj9Olwk",
+              authDomain: "enwa-13901.firebaseapp.com",
+              projectId: "enwa-13901",
+              storageBucket: "enwa-13901.appspot.com",
+              messagingSenderId: "301897932239",
+              appId: "1:301897932239:web:1b2cb2d3175adc1c3cc6ba"
+            };
+          
+            // Initialize Firebase
+            const app = initializeApp(firebaseConfig);
+          </script>
+    <div class="container">
+        <h2>Manager Page</h2>
+        <input type="text" id="sectionName" placeholder="Enter section name" />
+        <button onclick="addSection()">Add Section</button>
+
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Search for item name..." />
+            <button onclick="searchItems()">Search</button>
+        </div>
+
+        <div class="section-list" id="sectionList">
+            <!-- Sections will be dynamically added here -->
+        </div>
+    </div>
+
+    <script>
+        const sectionsData = [];
+
+        function addSection() {
+            const sectionName = document.getElementById('sectionName').value;
+            if (sectionName) {
+                const section = { sectionName, items: [] };
+                sectionsData.push(section);
+                renderSections();
+                updateLocalStorage();
+                document.getElementById('sectionName').value = ''; // Clear input
+            } else {
+                alert('Please enter a section name!');
+            }
+        }
+
+        function addItem(sectionIndex) {
+            const section = sectionsData[sectionIndex];
+            const itemName = document.getElementById(`itemName_${sectionIndex}`).value;
+
+            // Check if the item name is provided
+            if (!itemName) {
+                alert('Please enter an item name!');
+                return; // Exit the function if item name is not provided
+            }
+
+            // Get the other fields (optional)
+            const itemAddress = document.getElementById(`itemAddress_${sectionIndex}`).value;
+            const itemUrl = document.getElementById(`itemUrl_${sectionIndex}`).value;
+            const itemImage = document.getElementById(`itemImage_${sectionIndex}`).files[0];
+            const itemDate = document.getElementById(`itemDate_${sectionIndex}`).value; // Get date input
+            const itemPhone = document.getElementById(`itemPhone_${sectionIndex}`).value; // Get phone number
+
+            // Use a FileReader only if an image is uploaded
+            const item = { name: itemName, address: itemAddress || '', url: itemUrl || '', image: '', date: itemDate || '', phone: itemPhone || '' }; // Use empty string if not provided
+
+            if (itemImage) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    item.image = e.target.result; // Assign image data
+                    section.items.push(item); // Add item to the section
+                    renderSections();
+                    updateLocalStorage();
+                };
+                reader.readAsDataURL(itemImage); // Read the image file
+            } else {
+                section.items.push(item); // If no image, just add the item
+                renderSections();
+                updateLocalStorage();
+            }
+
+            // Clear the input fields after adding
+            document.getElementById(`itemName_${sectionIndex}`).value = '';
+            document.getElementById(`itemAddress_${sectionIndex}`).value = '';
+            document.getElementById(`itemUrl_${sectionIndex}`).value = '';
+            document.getElementById(`itemImage_${sectionIndex}`).value = '';
+            document.getElementById(`itemDate_${sectionIndex}`).value = '';
+            document.getElementById(`itemPhone_${sectionIndex}`).value = ''; // Clear phone number input
+        }
+
+        function deleteItem(sectionIndex, itemIndex) {
+            sectionsData[sectionIndex].items.splice(itemIndex, 1);
+            renderSections();
+            updateLocalStorage();
+        }
+
+        function deleteSection(index) {
+            sectionsData.splice(index, 1);
+            renderSections();
+            updateLocalStorage();
+        }
+
+        function renderSections(searchTerm = '') {
+            const sectionList = document.getElementById('sectionList');
+            sectionList.innerHTML = '';
+            sectionsData.forEach((section, index) => {
+                const sectionDiv = document.createElement('div');
+                sectionDiv.classList.add('section');
+
+                const sectionHeader = document.createElement('div');
+                sectionHeader.classList.add('section-header');
+
+                const sectionTitle = document.createElement('h3');
+                sectionTitle.textContent = section.sectionName;
+                sectionHeader.appendChild(sectionTitle);
+
+                // Delete Section Button
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Delete Section';
+                deleteButton.onclick = () => deleteSection(index);
+                sectionHeader.appendChild(deleteButton);
+
+                sectionDiv.appendChild(sectionHeader);
+
+                const itemForm = document.createElement('div');
+                itemForm.innerHTML = `
+                    <input type="text" id="itemName_${index}" placeholder="Item Name" />
+                    <input type="text" id="itemAddress_${index}" placeholder="Item Address" />
+                    <input type="url" id="itemUrl_${index}" placeholder="Item URL" />
+                    <input type="file" id="itemImage_${index}" />
+                    <input type="date" id="itemDate_${index}" />
+                    <input type="text" id="itemPhone_${index}" placeholder="Item Phone Number" /> <!-- Phone Number Input -->
+                    <button onclick="addItem(${index})">Add Item</button>
+                `;
+                sectionDiv.appendChild(itemForm);
+
+                const itemListDiv = document.createElement('div');
+                itemListDiv.classList.add('item-list');
+                section.items.forEach((item, itemIndex) => {
+                    if (searchTerm === '' || item.name.toLowerCase().includes(searchTerm.toLowerCase())) {
+                        const itemDiv = document.createElement('div');
+                        itemDiv.innerHTML = `
+                            <strong>${item.name}</strong>
+                            <span>${item.address}</span>
+                            ${item.url ? `<button onclick="window.open('${item.url}', '_blank')">Open URL</button>` : ''}
+                            <span>${item.phone}</span> <!-- Display Phone Number -->
+                            ${item.image ? `<img src="${item.image}" alt="${item.name}"/>` : ''}
+                            <span>${item.date}</span>
+                            <button onclick="deleteItem(${index}, ${itemIndex})">Delete Item</button>
+                        `;
+                        itemListDiv.appendChild(itemDiv);
+                    }
+                });
+                sectionDiv.appendChild(itemListDiv);
+                sectionList.appendChild(sectionDiv);
+            });
+        }
+
+        function updateLocalStorage() {
+            localStorage.setItem('sectionsData', JSON.stringify(sectionsData));
+        }
+
+        function loadLocalStorage() {
+            const storedData = localStorage.getItem('sectionsData');
+            if (storedData) {
+                sectionsData.push(...JSON.parse(storedData));
+                renderSections();
+            }
+        }
+
+        function searchItems() {
+            const searchTerm = document.getElementById('searchInput').value;
+            renderSections(searchTerm);
+        }
+
+        window.onload = loadLocalStorage;
+    </script>
+  
+</body>
+</html>
